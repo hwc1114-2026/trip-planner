@@ -262,7 +262,7 @@ const tripRef = db.ref('trips/' + tripId);
 let state = {
   title:'我的旅行行程',
   subtitle:'點這裡填入行程說明，例如目的地、天數、旅伴',
-  rates: { '¥':0.21, 'NT$':1 },
+  rates: { '¥':0.21, 'TWD':1 },
   days:[ blankDay() ],
 };
 let activeDay = 0;
@@ -324,7 +324,7 @@ function renderRates(){
   Object.keys(state.rates).forEach(cur=>{
     const row = document.createElement('div');
     row.className = 'rate-item';
-    const isBase = cur === 'NT$' && Object.keys(state.rates).length <= 1;
+    const isBase = cur === 'TWD' && Object.keys(state.rates).length <= 1;
     row.innerHTML = `
       <input class="rcur" data-old="${escapeHtml(cur)}" value="${escapeHtml(cur)}">
       <span>=</span>
@@ -336,7 +336,9 @@ function renderRates(){
     const valInput = row.querySelector('.rval');
     curInput.addEventListener('change', ()=>{
       const oldKey = curInput.getAttribute('data-old');
-      const newKey = curInput.value.trim() || oldKey;
+      let newKey = curInput.value.trim().replace(/[.#$/\[\]]/g, '') || oldKey;
+      if(!newKey) newKey = oldKey;
+      curInput.value = newKey;
       if(newKey !== oldKey){
         const rateVal = state.rates[oldKey];
         delete state.rates[oldKey];
@@ -564,7 +566,7 @@ function applyIncomingState(parsed){
   if(!parsed || !Array.isArray(parsed.days) || !parsed.days.length) return;
   applyingRemoteUpdate = true;
   state = parsed;
-  if(!state.rates) state.rates = state.currency ? {[state.currency]: state.rate||1, 'NT$':1} : { '¥':0.21, 'NT$':1 };
+  if(!state.rates) state.rates = state.currency ? {[state.currency]: state.rate||1, 'TWD':1} : { '¥':0.21, 'TWD':1 };
   if(activeDay >= state.days.length) activeDay = state.days.length - 1;
   document.getElementById('titleInput').textContent = state.title;
   document.getElementById('subInput').textContent = state.subtitle;
@@ -637,7 +639,7 @@ document.getElementById('resetBtn').addEventListener('click', async ()=>{
   state = {
     title:'我的旅行行程',
     subtitle:'點這裡填入行程說明，例如目的地、天數、旅伴',
-    rates: { '¥':0.21, 'NT$':1 },
+    rates: { '¥':0.21, 'TWD':1 },
     days:[ blankDay() ],
   };
   activeDay = 0;
