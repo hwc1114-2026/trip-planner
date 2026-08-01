@@ -612,13 +612,17 @@ async function loadState(){
 }
 
 function showConfigWarningIfNeeded(e){
-  const msg = (e && e.message) || '';
-  if(msg.includes('PERMISSION_DENIED') || msg.includes('Permission denied') || firebaseConfig.apiKey==='YOUR_API_KEY'){
-    const flag = document.getElementById('saveFlag');
-    flag.textContent = '⚠️尚未設定 Firebase，資料無法同步';
-    flag.style.background = '#9C4F4E';
-    flag.classList.add('show');
-  }
+  const flag = document.getElementById('saveFlag');
+  const msg = (e && e.message) || String(e) || '未知錯誤';
+  flag.textContent = '⚠️同步失敗：' + msg;
+  flag.style.background = '#9C4F4E';
+  flag.classList.add('show');
+  clearTimeout(window._warnTimer);
+  window._warnTimer = setTimeout(()=>{
+    flag.classList.remove('show');
+    flag.style.background = '';
+    flag.textContent = '已儲存';
+  }, 8000);
 }
 
 document.getElementById('titleInput').addEventListener('input', e=>{
