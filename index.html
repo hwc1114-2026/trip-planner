@@ -512,12 +512,12 @@ function renderTimeline(d){
       });
     });
     const descEl = row.querySelector('.t-desc');
-    if(descEl) autoGrow(descEl);
     row.querySelector('.t-del').addEventListener('click', ()=>{
       d.timeline.splice(idx,1);
       renderTimeline(d); renderMap(d); renderSummary(); scheduleSave();
     });
     wrap.appendChild(row);
+    if(descEl) autoGrow(descEl);
   });
 }
 
