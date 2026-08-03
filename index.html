@@ -88,6 +88,13 @@
   .day-meta{display:flex;flex-direction:column;gap:6px;}
   .loc-input{border:1px solid var(--line);border-radius:8px;padding:5px 10px;font-family:'Noto Serif TC',serif;font-weight:700;font-size:15px;width:90px;color:var(--loc-color,var(--ink));}
   .date-input{border:1px solid var(--line);border-radius:8px;padding:5px 10px;font-family:inherit;font-size:12.5px;color:var(--ink-soft);width:120px;}
+  .day-actions{display:flex;align-items:center;gap:6px;}
+  .move-day-btn{
+    border:1px solid var(--line);background:transparent;border-radius:999px;width:28px;height:28px;
+    font-size:12px;color:var(--ink-soft);cursor:pointer;font-family:inherit;
+  }
+  .move-day-btn:hover:not(:disabled){border-color:var(--ink-soft);color:var(--ink);}
+  .move-day-btn:disabled{opacity:.3;cursor:not-allowed;}
   .del-day-btn{border:1px solid var(--line);background:transparent;border-radius:999px;padding:5px 12px;font-size:12px;color:var(--ink-soft);cursor:pointer;font-family:inherit;}
   .del-day-btn:hover{border-color:#9C4F4E;color:#9C4F4E;}
   .route-note{font-size:10.5px;color:var(--ink-soft);opacity:.75;margin:10px 0 12px;}
@@ -409,7 +416,11 @@ function renderPanel(){
           <input class="loc-input" id="locInput" style="color:${color}" value="${escapeHtml(d.loc||'')}" placeholder="地區／城市／小標">
         </div>
       </div>
-      <button class="del-day-btn" id="delDayBtn" ${state.days.length<=1?'disabled':''}>🗑 刪除此日</button>
+      <div class="day-actions">
+        <button class="move-day-btn" id="moveDayLeft" title="往前移一天" ${activeDay<=0?'disabled':''}>◀</button>
+        <button class="move-day-btn" id="moveDayRight" title="往後移一天" ${activeDay>=state.days.length-1?'disabled':''}>▶</button>
+        <button class="del-day-btn" id="delDayBtn" ${state.days.length<=1?'disabled':''}>🗑 刪除此日</button>
+      </div>
     </div>
     <div class="route-note">📍 地圖會依你填入的地點名稱自動嵌入 Google 地圖；地點太短或常見字（如地名縮寫）可能定位錯誤，建議加上國家／城市讓搜尋更準（例如「白馬 日本」）。交通項目可另外點「查看實際交通路線」開啟含電車／巴士班次的完整路線</div>
     <div class="map" id="map"></div>
@@ -422,6 +433,18 @@ function renderPanel(){
   });
   document.getElementById('dateInput').addEventListener('input', e=>{
     d.date = e.target.value; renderTabs(); scheduleSave();
+  });
+  document.getElementById('moveDayLeft').addEventListener('click', ()=>{
+    if(activeDay<=0) return;
+    [state.days[activeDay-1], state.days[activeDay]] = [state.days[activeDay], state.days[activeDay-1]];
+    activeDay -= 1;
+    renderTabs(); renderPanel(); scheduleSave();
+  });
+  document.getElementById('moveDayRight').addEventListener('click', ()=>{
+    if(activeDay>=state.days.length-1) return;
+    [state.days[activeDay+1], state.days[activeDay]] = [state.days[activeDay], state.days[activeDay+1]];
+    activeDay += 1;
+    renderTabs(); renderPanel(); scheduleSave();
   });
   document.getElementById('delDayBtn').addEventListener('click', ()=>{
     if(state.days.length<=1) return;
