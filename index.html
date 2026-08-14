@@ -64,6 +64,10 @@
   .rate-item .rdel{border:none;background:transparent;color:var(--ink-soft);cursor:pointer;font-size:12px;padding:0;}
   .rate-item .rdel:hover{color:#9C4F4E;}
 
+  .start-date-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;font-size:12.5px;color:var(--ink-soft);}
+  .start-date-row label{white-space:nowrap;}
+  .start-date-row input[type=date]{border:1px solid var(--line);border-radius:8px;padding:4px 8px;font-family:inherit;font-size:12.5px;color:var(--ink);background:var(--bg-card);}
+  .start-date-hint{font-size:11px;color:var(--ink-soft);opacity:.8;}
   .tabs{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 12px;scrollbar-width:thin;}
   .tabs::-webkit-scrollbar{height:5px;}
   .tabs::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px;}
@@ -89,6 +93,7 @@
   .day-meta{display:flex;flex-direction:column;gap:6px;}
   .loc-input{border:1px solid var(--line);border-radius:8px;padding:5px 10px;font-family:'Noto Serif TC',serif;font-weight:700;font-size:15px;width:90px;color:var(--loc-color,var(--ink));}
   .date-input{border:1px solid var(--line);border-radius:8px;padding:5px 10px;font-family:inherit;font-size:12.5px;color:var(--ink-soft);width:120px;}
+  .date-input[readonly]{background:var(--bg);cursor:default;}
   .day-actions{display:flex;align-items:center;gap:6px;}
   .move-day-btn{
     border:1px solid var(--line);background:transparent;border-radius:999px;width:28px;height:28px;
@@ -214,6 +219,11 @@
     </div>
   </div>
 
+  <div class="start-date-row">
+    <label for="startDateInput">行程開始日期</label>
+    <input type="date" id="startDateInput">
+    <span class="start-date-hint">設定後，每天的日期／星期會自動依序排好</span>
+  </div>
   <div class="tabs" id="tabs"></div>
 
   <div class="panel" id="panel"></div>
@@ -271,6 +281,7 @@ let state = {
   title:'我的旅行行程',
   subtitle:'點這裡填入行程說明，例如目的地、天數、旅伴',
   rates: { '¥':0.21, 'TWD':1 },
+  startDate:'',
   days:[ blankDay() ],
 };
 let activeDay = 0;
@@ -292,6 +303,24 @@ function numOrZero(v){ const n = Number(v); return isNaN(n) ? 0 : n; }
 function autoGrow(el){
   el.style.height = 'auto';
   el.style.height = (el.scrollHeight) + 'px';
+}
+
+const WEEKDAY_LABELS = ['日','一','二','三','四','五','六'];
+function formatDateLabel(dateObj){
+  const m = dateObj.getMonth()+1;
+  const dd = dateObj.getDate();
+  const w = WEEKDAY_LABELS[dateObj.getDay()];
+  return `${m}/${dd}(${w})`;
+}
+function recomputeDates(){
+  if(!state.startDate) return;
+  const start = new Date(state.startDate + 'T00:00:00');
+  if(isNaN(start.getTime())) return;
+  state.days.forEach((day, i)=>{
+    const dt = new Date(start);
+    dt.setDate(dt.getDate()+i);
+    day.date = formatDateLabel(dt);
+  });
 }
 
 function renderSummary(){
@@ -399,6 +428,7 @@ function renderTabs(){
     const last = state.days[state.days.length-1];
     state.days.push({ loc:last?last.loc:'', date:'', timeline:[ blankItem() ] });
     activeDay = state.days.length-1;
+    recomputeDates();
     renderTabs(); renderPanel(); scheduleSave();
   });
   tabs.appendChild(addTab);
@@ -413,7 +443,7 @@ function renderPanel(){
       <div class="panel-head-left">
         <div class="day-num">${String(activeDay+1).padStart(2,'0')}</div>
         <div class="day-meta">
-          <input class="date-input" id="dateInput" placeholder="填入日期，如 11/19" value="${escapeHtml(d.date||'')}">
+          <input class="date-input" id="dateInput" placeholder="填入日期，如 11/19" value="${escapeHtml(d.date||'')}" ${state.startDate?'readonly title="已設定起始日期，日期會自動排序；如需個別調整，請先清空上方起始日期"':''}>
           <input class="loc-input" id="locInput" style="color:${color}" value="${escapeHtml(d.loc||'')}" placeholder="地區／城市／小標">
         </div>
       </div>
@@ -433,18 +463,21 @@ function renderPanel(){
     d.loc = e.target.value; renderTabs(); scheduleSave();
   });
   document.getElementById('dateInput').addEventListener('input', e=>{
+    if(state.startDate) return;
     d.date = e.target.value; renderTabs(); scheduleSave();
   });
   document.getElementById('moveDayLeft').addEventListener('click', ()=>{
     if(activeDay<=0) return;
     [state.days[activeDay-1], state.days[activeDay]] = [state.days[activeDay], state.days[activeDay-1]];
     activeDay -= 1;
+    recomputeDates();
     renderTabs(); renderPanel(); scheduleSave();
   });
   document.getElementById('moveDayRight').addEventListener('click', ()=>{
     if(activeDay>=state.days.length-1) return;
     [state.days[activeDay+1], state.days[activeDay]] = [state.days[activeDay], state.days[activeDay+1]];
     activeDay += 1;
+    recomputeDates();
     renderTabs(); renderPanel(); scheduleSave();
   });
   document.getElementById('delDayBtn').addEventListener('click', ()=>{
@@ -452,6 +485,7 @@ function renderPanel(){
     if(!confirm(`確定要刪除 Day ${activeDay+1}（${d.loc||'未命名'}）嗎？`)) return;
     state.days.splice(activeDay,1);
     activeDay = Math.max(0, activeDay-1);
+    recomputeDates();
     renderTabs(); renderPanel(); scheduleSave();
   });
   document.getElementById('addItemBtn').addEventListener('click', ()=>{
@@ -591,9 +625,11 @@ function applyIncomingState(parsed){
   applyingRemoteUpdate = true;
   state = parsed;
   if(!state.rates) state.rates = state.currency ? {[state.currency]: state.rate||1, 'TWD':1} : { '¥':0.21, 'TWD':1 };
+  if(state.startDate == null) state.startDate = '';
   if(activeDay >= state.days.length) activeDay = state.days.length - 1;
   document.getElementById('titleInput').textContent = state.title;
   document.getElementById('subInput').textContent = state.subtitle;
+  document.getElementById('startDateInput').value = state.startDate;
   renderRates();
   renderSummary();
   renderTabs();
@@ -609,6 +645,7 @@ async function loadState(){
     else{
       document.getElementById('titleInput').textContent = state.title;
       document.getElementById('subInput').textContent = state.subtitle;
+      document.getElementById('startDateInput').value = state.startDate || '';
       renderRates();
       renderSummary(); renderTabs(); renderPanel();
     }
@@ -616,6 +653,7 @@ async function loadState(){
     console.error('load error', e);
     document.getElementById('titleInput').textContent = state.title;
     document.getElementById('subInput').textContent = state.subtitle;
+    document.getElementById('startDateInput').value = state.startDate || '';
     renderRates();
     renderSummary(); renderTabs(); renderPanel();
     showConfigWarningIfNeeded(e);
@@ -657,6 +695,11 @@ document.getElementById('titleInput').addEventListener('input', e=>{
 document.getElementById('subInput').addEventListener('input', e=>{
   state.subtitle = e.target.textContent; scheduleSave();
 });
+document.getElementById('startDateInput').addEventListener('change', e=>{
+  state.startDate = e.target.value || '';
+  recomputeDates();
+  renderTabs(); renderPanel(); scheduleSave();
+});
 
 document.getElementById('resetBtn').addEventListener('click', async ()=>{
   if(!confirm('確定要清空所有內容，還原成空白模板嗎？此動作無法復原。')) return;
@@ -664,11 +707,13 @@ document.getElementById('resetBtn').addEventListener('click', async ()=>{
     title:'我的旅行行程',
     subtitle:'點這裡填入行程說明，例如目的地、天數、旅伴',
     rates: { '¥':0.21, 'TWD':1 },
+    startDate:'',
     days:[ blankDay() ],
   };
   activeDay = 0;
   document.getElementById('titleInput').textContent = state.title;
   document.getElementById('subInput').textContent = state.subtitle;
+  document.getElementById('startDateInput').value = '';
   renderRates();
   renderSummary(); renderTabs(); renderPanel();
   await saveState();
