@@ -9,6 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
 <style>
   :root{
     --page-bg:#E9EAEC;
@@ -119,6 +120,13 @@
     background:var(--bg-card);border:2px solid var(--dot-color,var(--c-sight));
   }
   .t-top{display:flex;align-items:baseline;gap:10px;margin-bottom:6px;flex-wrap:wrap;}
+  .t-drag-handle{
+    cursor:grab;color:var(--ink-soft);font-size:16px;line-height:1;user-select:none;
+    touch-action:none;padding:2px 2px;flex:0 0 auto;
+  }
+  .t-drag-handle:active{cursor:grabbing;}
+  .t-item.t-item-ghost{opacity:.35;background:var(--bg);border-radius:10px;}
+  .t-item.sortable-chosen{background:var(--bg);border-radius:10px;}
   .t-time{border:none;background:transparent;padding:0;font-size:12.5px;font-weight:700;color:var(--ink-soft);width:44px;font-family:'Noto Serif TC',serif;}
   .t-tag-select{font-size:9.5px;font-weight:700;color:#fff;border:none;border-radius:999px;padding:1px 7px;font-family:inherit;cursor:pointer;}
   .t-title{
@@ -287,6 +295,7 @@ let state = {
 let activeDay = 0;
 let saveTimer = null;
 let mapUpdateTimer = null;
+let timelineSortable = null;
 
 function rateFor(cur){
   if(!cur) return 1;
@@ -517,6 +526,7 @@ function renderTimeline(d){
     const payOptions = PAYMENT_OPTIONS.map(p=>`<option value="${p}" ${p===item.paymentStatus?'selected':''}>${p}</option>`).join('');
     row.innerHTML = `
       <div class="t-top">
+        <span class="t-drag-handle" title="拖曳調整順序">⠿</span>
         <input class="t-time" data-idx="${idx}" data-field="time" value="${escapeHtml(item.time)}">
         <select class="t-tag-select" data-idx="${idx}" data-field="type" style="background:${meta.color}">${typeOptions}</select>
         <input class="t-title" data-idx="${idx}" data-field="title" value="${escapeHtml(item.title)}">
@@ -576,6 +586,21 @@ function renderTimeline(d){
     });
     wrap.appendChild(row);
     if(descEl) autoGrow(descEl);
+  });
+
+  if(timelineSortable){ timelineSortable.destroy(); timelineSortable = null; }
+  timelineSortable = new Sortable(wrap, {
+    handle: '.t-drag-handle',
+    animation: 150,
+    ghostClass: 't-item-ghost',
+    onEnd: (evt)=>{
+      if(evt.oldIndex === evt.newIndex) return;
+      const [moved] = d.timeline.splice(evt.oldIndex, 1);
+      d.timeline.splice(evt.newIndex, 0, moved);
+      renderTimeline(d);
+      renderMap(d);
+      scheduleSave();
+    }
   });
 }
 
