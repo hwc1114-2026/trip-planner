@@ -145,7 +145,6 @@
   .t-place-row{display:flex;align-items:center;gap:6px;margin-top:4px;flex-wrap:wrap;}
   .t-place{flex:1;min-width:140px;border:1px solid var(--line-soft);background:var(--bg);font-family:inherit;font-size:11.5px;color:var(--ink-soft);padding:3px 8px;border-radius:8px;}
   .t-place:focus{outline:1px solid var(--line);}
-  .t-geo-status{font-size:10px;color:var(--ink-soft);white-space:nowrap;}
   .t-cost{display:flex;align-items:center;gap:3px;background:var(--bg);border:1px solid var(--line-soft);border-radius:8px;padding:3px 6px;}
   .t-cost label{font-size:10.5px;color:var(--ink-soft);}
   .t-cost input.cur{width:34px;border:none;background:transparent;font-family:inherit;font-weight:700;font-size:12px;color:var(--ink);text-align:center;padding:0;border-right:1px solid var(--line-soft);}
@@ -157,6 +156,39 @@
   .t-nav.transit{color:#1A6B4F;border-color:#c3ddd2;background:#eef7f3;}
   .t-nav.transit:hover{border-color:#1A6B4F;}
 
+  .tours-box{background:var(--bg);border:1px solid var(--line-soft);border-radius:10px;padding:8px 10px;margin-top:6px;}
+  .tours-box-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}
+  .tours-box-title{font-size:10.5px;color:var(--ink-soft);font-weight:700;}
+  .tours-list{display:flex;flex-direction:column;gap:6px;}
+  .tour-row{display:flex;align-items:center;gap:6px;}
+  .tour-name{flex:1.1;min-width:0;border:1px solid var(--line-soft);background:#fff;border-radius:6px;padding:4px 8px;font-family:inherit;font-size:12px;color:var(--ink);}
+  .tour-url{flex:1;min-width:0;border:1px solid var(--line-soft);background:#fff;border-radius:6px;padding:4px 8px;font-family:inherit;font-size:11.5px;color:var(--ink-soft);}
+  .tour-del{flex:0 0 auto;border:none;background:transparent;color:var(--ink-soft);cursor:pointer;font-size:12px;padding:0 2px;}
+  .tour-del:hover{color:#9C4F4E;}
+  .tour-row-collapsed{gap:4px;}
+  .tour-chip{
+    display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid var(--line-soft);
+    border-radius:999px;padding:4px 10px;font-family:inherit;font-size:11.5px;color:var(--ink);
+    text-decoration:none;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:0 1 auto;
+  }
+  .tour-chip:hover{border-color:var(--ink-soft);}
+  .tour-edit{flex:0 0 auto;border:none;background:transparent;color:var(--ink-soft);cursor:pointer;font-size:11px;padding:0 2px;}
+  .tour-row-editing{flex-wrap:wrap;}
+  .tour-done{
+    flex:0 0 auto;border:1px solid var(--c-sight);background:var(--c-sight);color:#fff;border-radius:6px;
+    cursor:pointer;font-size:12px;width:24px;height:24px;line-height:1;
+  }
+  .tour-done:hover{opacity:.85;}
+  .tour-add-empty-btn{
+    background:transparent;font-family:inherit;cursor:pointer;
+  }
+  .tour-add-empty-btn:hover{border-color:var(--ink-soft);color:var(--ink);}
+  .tour-edit:hover{color:var(--ink);}
+  .tour-add-btn{
+    flex:0 0 auto;width:20px;height:20px;border-radius:50%;background:#fff;border:1px dashed var(--line);
+    font-family:inherit;font-size:13px;line-height:1;color:var(--ink-soft);cursor:pointer;padding:0;
+  }
+  .tour-add-btn:hover{border-color:var(--ink-soft);color:var(--ink);}
   .stay-box{background:var(--bg);border:1px solid var(--line-soft);border-radius:10px;padding:8px 10px;margin-top:8px;}
   .stay-box-title{font-size:10.5px;color:var(--ink-soft);margin-bottom:6px;font-weight:700;}
   .stay-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
@@ -257,8 +289,8 @@ const LOC_PALETTE = ['#5B8DBE','#D9A63E','#C4645F','#8874B0','#D97A4C','#6FA88A'
 const PAYMENT_OPTIONS = ['未付款','已付訂金','已付款','到店付款'];
 
 function blankItem(){
-  return { time:'12:00', type:'sight', title:'新項目', desc:'', lat:null, lng:null, mapQuery:'', cost:'', currency:'¥',
-    bookingRef:'', paymentStatus:'未付款', cancelDeadline:'' };
+  return { time:'12:00', type:'sight', title:'新項目', desc:'', lat:null, lng:null, mapQuery:'', cost:'', currency:'$',
+    bookingRef:'', paymentStatus:'未付款', cancelDeadline:'', tours:[] };
 }
 function blankDay(){
   return { loc:'', date:'', timeline:[ blankItem() ] };
@@ -296,6 +328,7 @@ let activeDay = 0;
 let saveTimer = null;
 let mapUpdateTimer = null;
 let timelineSortable = null;
+let editingTours = new Set();
 
 function rateFor(cur){
   if(!cur) return 1;
@@ -533,11 +566,40 @@ function renderTimeline(d){
         <button class="t-del" data-idx="${idx}" title="刪除此項目">✕</button>
       </div>
       <textarea class="t-desc" data-idx="${idx}" data-field="desc" rows="1">${escapeHtml(item.desc)}</textarea>
+      ${item.type==='sight' ? (
+        (item.tours||[]).length ? `
+        <div class="tours-box">
+          <div class="tours-box-head">
+            <div class="tours-box-title">🚩 相關行程／連結</div>
+            <button class="tour-add-btn" data-idx="${idx}" title="新增行程連結">＋</button>
+          </div>
+          <div class="tours-list" data-idx="${idx}">
+            ${item.tours.map((t,ti)=>{
+              const key = idx+'-'+ti;
+              const collapsed = t.url && !editingTours.has(key);
+              if(collapsed){
+                return `
+                <div class="tour-row tour-row-collapsed">
+                  <a class="tour-chip" href="${escapeHtml(t.url)}" target="_blank" rel="noopener">🔗 ${escapeHtml(t.name||'連結')}</a>
+                  <button class="tour-edit" data-idx="${idx}" data-ti="${ti}" title="編輯">✎</button>
+                  <button class="tour-del" data-idx="${idx}" data-ti="${ti}" title="刪除此連結">✕</button>
+                </div>`;
+              }
+              return `
+              <div class="tour-row tour-row-editing">
+                <input type="text" class="tour-name" data-idx="${idx}" data-ti="${ti}" placeholder="行程名稱／時長／價格" value="${escapeHtml(t.name||'')}">
+                <input type="text" class="tour-url" data-idx="${idx}" data-ti="${ti}" placeholder="連結網址" value="${escapeHtml(t.url||'')}">
+                <button class="tour-done" data-idx="${idx}" data-ti="${ti}" title="完成">✓</button>
+                <button class="tour-del" data-idx="${idx}" data-ti="${ti}" title="刪除此連結">✕</button>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>` : ''
+      ) : ''}
       <div class="t-place-row">
         <input class="t-place" data-idx="${idx}" data-field="mapQuery" placeholder="地點名稱（用於地圖定位／導航）" value="${escapeHtml(item.mapQuery)}">
-        <span class="t-geo-status">🗺️</span>
         <div class="t-cost">
-          <input type="text" class="cur" data-idx="${idx}" data-field="currency" value="${escapeHtml(item.currency||'¥')}" maxlength="4">
+          <input type="text" class="cur" data-idx="${idx}" data-field="currency" value="${escapeHtml(item.currency||'$')}" maxlength="4">
           <input type="number" class="amt" min="0" step="10" data-idx="${idx}" data-field="cost" value="${escapeHtml(String(item.cost||''))}" placeholder="0">
         </div>
       </div>
@@ -562,6 +624,7 @@ function renderTimeline(d){
       <div class="t-links">
         <a class="t-nav" href="${navUrl}" target="_blank" rel="noopener">📍 Google地圖導航</a>
         ${transitUrl ? `<a class="t-nav transit" href="${transitUrl}" target="_blank" rel="noopener">🚃 查看實際交通路線</a>` : ''}
+        ${(item.type==='sight' && !(item.tours||[]).length) ? `<button class="t-nav tour-add-empty-btn" data-idx="${idx}">🚩 新增行程／連結</button>` : ''}
       </div>
     `;
     row.querySelectorAll('[data-field]').forEach(el=>{
@@ -584,6 +647,55 @@ function renderTimeline(d){
       d.timeline.splice(idx,1);
       renderTimeline(d); renderMap(d); renderSummary(); scheduleSave();
     });
+    row.querySelectorAll('.tour-name, .tour-url').forEach(el=>{
+      el.addEventListener('input', ()=>{
+        const ti = Number(el.getAttribute('data-ti'));
+        const field = el.classList.contains('tour-name') ? 'name' : 'url';
+        if(!item.tours[ti]) return;
+        item.tours[ti][field] = el.value;
+        scheduleSave();
+      });
+    });
+    row.querySelectorAll('.tour-edit').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const ti = btn.getAttribute('data-ti');
+        editingTours.add(idx+'-'+ti);
+        renderTimeline(d);
+      });
+    });
+    row.querySelectorAll('.tour-done').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const ti = btn.getAttribute('data-ti');
+        editingTours.delete(idx+'-'+ti);
+        renderTimeline(d); scheduleSave();
+      });
+    });
+    row.querySelectorAll('.tour-del').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const ti = Number(btn.getAttribute('data-ti'));
+        item.tours.splice(ti,1);
+        Array.from(editingTours).filter(k=>k.startsWith(idx+'-')).forEach(k=> editingTours.delete(k));
+        renderTimeline(d); scheduleSave();
+      });
+    });
+    const tourAddBtn = row.querySelector('.tour-add-btn');
+    if(tourAddBtn){
+      tourAddBtn.addEventListener('click', ()=>{
+        if(!item.tours) item.tours = [];
+        item.tours.push({name:'', url:''});
+        editingTours.add(idx+'-'+(item.tours.length-1));
+        renderTimeline(d); scheduleSave();
+      });
+    }
+    const tourAddEmptyBtn = row.querySelector('.tour-add-empty-btn');
+    if(tourAddEmptyBtn){
+      tourAddEmptyBtn.addEventListener('click', ()=>{
+        if(!item.tours) item.tours = [];
+        item.tours.push({name:'', url:''});
+        editingTours.add(idx+'-0');
+        renderTimeline(d); scheduleSave();
+      });
+    }
     wrap.appendChild(row);
     if(descEl) autoGrow(descEl);
   });
