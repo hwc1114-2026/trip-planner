@@ -72,7 +72,7 @@
   .tabs{display:flex;gap:8px;overflow-x:auto;padding:4px 2px 12px;scrollbar-width:thin;}
   .tabs::-webkit-scrollbar{height:5px;}
   .tabs::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px;}
-  .tab{flex:0 0 auto;background:var(--bg-card);border:1px solid var(--line);border-radius:12px;padding:8px 12px;text-align:center;cursor:pointer;min-width:64px;}
+  .tab{flex:0 0 auto;background:var(--bg-card);border:1px solid var(--line);border-radius:12px;padding:8px 12px;text-align:center;cursor:pointer;min-width:64px;touch-action:manipulation;}
   .tab .d{font-size:12px;font-weight:700;color:var(--ink-soft);}
   .tab .date{font-size:11px;color:var(--ink-soft);margin-top:2px;}
   .tab .loc{font-size:10px;margin-top:3px;font-weight:700;}
@@ -338,6 +338,7 @@ let activeDay = 0;
 let saveTimer = null;
 let mapUpdateTimer = null;
 let timelineSortable = null;
+let tabsSortable = null;
 let editingTours = new Set();
 let toursOpenIdx = new Set();
 
@@ -489,6 +490,24 @@ function renderTabs(){
     renderTabs(); renderPanel(); scheduleSave();
   });
   tabs.appendChild(addTab);
+
+  if(tabsSortable){ tabsSortable.destroy(); tabsSortable = null; }
+  tabsSortable = new Sortable(tabs, {
+    draggable: '.tab',
+    animation: 150,
+    delay: 150,
+    delayOnTouchOnly: true,
+    ghostClass: 't-item-ghost',
+    onEnd: (evt)=>{
+      if(evt.oldIndex === evt.newIndex) return;
+      const activeId = state.days[activeDay];
+      const [moved] = state.days.splice(evt.oldIndex, 1);
+      state.days.splice(evt.newIndex, 0, moved);
+      activeDay = state.days.indexOf(activeId);
+      recomputeDates();
+      renderTabs(); renderPanel(); scheduleSave();
+    }
+  });
 }
 
 function renderPanel(){
