@@ -160,6 +160,9 @@
   }
   .tour-inline-btn:hover{border-color:var(--ink-soft);}
   .t-cost{display:flex;align-items:center;gap:3px;background:var(--bg);border:1px solid var(--line-soft);border-radius:8px;padding:3px 6px;}
+  .t-cost-sub{padding:3px 5px;}
+  .t-cost-label{font-size:9.5px;color:var(--ink-soft);white-space:nowrap;}
+  .t-cost.t-cost-sub input.amt{width:62px;}
   .t-cost label{font-size:10.5px;color:var(--ink-soft);}
   .t-cost input.cur{width:34px;border:none;background:transparent;font-family:inherit;font-weight:700;font-size:12px;color:var(--ink);text-align:center;padding:0;border-right:1px solid var(--line-soft);}
   .t-cost input.amt{width:60px;border:none;background:transparent;font-family:inherit;font-weight:700;font-size:12px;color:var(--ink);text-align:right;}
@@ -319,7 +322,8 @@ const BREAKFAST_OPTIONS = ['未定','含早餐','不含早餐'];
 function blankItem(){
   return { time:'12:00', type:'sight', title:'新項目', desc:'', lat:null, lng:null, mapQuery:'', cost:'', currency:'$',
     bookingRef:'', paymentStatus:'未付款', cancelDeadline:'', tours:[],
-    checkInDate:'', nights:'', checkInTime:'', checkOutTime:'', roomType:'', roomSize:'', breakfast:'未定', creditCard:'' };
+    checkInDate:'', nights:'', checkInTime:'', checkOutTime:'', roomType:'', roomSize:'', breakfast:'未定', creditCard:'',
+    deposit:'', balance:'' };
 }
 function blankDay(){
   return { loc:'', date:'', timeline:[ blankItem() ] };
@@ -656,6 +660,15 @@ function renderTimeline(d){
           <input class="t-place" data-idx="${idx}" data-field="mapQuery" placeholder="地點名稱（用於地圖定位／導航）" value="${escapeHtml(item.mapQuery)}">
         </div>
         ${item.type==='sight' ? `<button class="tour-inline-btn" data-idx="${idx}" title="新增／查看相關行程連結">🚩</button>` : ''}
+        ${item.type==='stay' ? `
+        <div class="t-cost t-cost-sub">
+          <span class="t-cost-label">訂金</span>
+          <input type="number" class="amt" min="0" step="10" data-idx="${idx}" data-field="deposit" value="${escapeHtml(String(item.deposit||''))}" placeholder="0">
+        </div>
+        <div class="t-cost t-cost-sub">
+          <span class="t-cost-label">尾款</span>
+          <input type="number" class="amt" min="0" step="10" data-idx="${idx}" data-field="balance" value="${escapeHtml(String(item.balance||''))}" placeholder="0">
+        </div>` : ''}
         <div class="t-cost">
           <input type="text" class="cur" data-idx="${idx}" data-field="currency" value="${escapeHtml(item.currency||'$')}" maxlength="4">
           <input type="number" class="amt" min="0" step="10" data-idx="${idx}" data-field="cost" value="${escapeHtml(String(item.cost||''))}" placeholder="0">
