@@ -166,6 +166,7 @@
   .t-cost label{font-size:10.5px;color:var(--ink-soft);}
   .t-cost input.cur{width:34px;border:none;background:transparent;font-family:inherit;font-weight:700;font-size:12px;color:var(--ink);text-align:center;padding:0;border-right:1px solid var(--line-soft);}
   .t-cost input.amt{width:60px;border:none;background:transparent;font-family:inherit;font-weight:700;font-size:12px;color:var(--ink);text-align:right;}
+  .t-cost-total input.amt{width:78px;}
   .t-cost input:focus{outline:none;}
   .t-links{display:flex;gap:8px;margin-top:6px;flex-wrap:wrap;}
   .t-nav{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;color:var(--ink-soft);text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:3px 10px;}
@@ -323,7 +324,7 @@ function blankItem(){
   return { time:'12:00', type:'sight', title:'新項目', desc:'', lat:null, lng:null, mapQuery:'', cost:'', currency:'$',
     bookingRef:'', paymentStatus:'未付款', cancelDeadline:'', tours:[],
     checkInDate:'', nights:'', checkInTime:'', checkOutTime:'', roomType:'', roomSize:'', breakfast:'未定', creditCard:'',
-    deposit:'', balance:'' };
+    deposit:'', balance:'', depositCurrency:'$', balanceCurrency:'$' };
 }
 function blankDay(){
   return { loc:'', date:'', timeline:[ blankItem() ] };
@@ -663,13 +664,15 @@ function renderTimeline(d){
         ${item.type==='stay' ? `
         <div class="t-cost t-cost-sub">
           <span class="t-cost-label">訂金</span>
+          <input type="text" class="cur" data-idx="${idx}" data-field="depositCurrency" value="${escapeHtml(item.depositCurrency||item.currency||'$')}" maxlength="4">
           <input type="number" class="amt" min="0" step="10" data-idx="${idx}" data-field="deposit" value="${escapeHtml(String(item.deposit||''))}" placeholder="0">
         </div>
         <div class="t-cost t-cost-sub">
           <span class="t-cost-label">尾款</span>
+          <input type="text" class="cur" data-idx="${idx}" data-field="balanceCurrency" value="${escapeHtml(item.balanceCurrency||item.currency||'$')}" maxlength="4">
           <input type="number" class="amt" min="0" step="10" data-idx="${idx}" data-field="balance" value="${escapeHtml(String(item.balance||''))}" placeholder="0">
         </div>` : ''}
-        <div class="t-cost">
+        <div class="t-cost t-cost-total">
           <input type="text" class="cur" data-idx="${idx}" data-field="currency" value="${escapeHtml(item.currency||'$')}" maxlength="4">
           <input type="number" class="amt" min="0" step="10" data-idx="${idx}" data-field="cost" value="${escapeHtml(String(item.cost||''))}" placeholder="0">
         </div>
