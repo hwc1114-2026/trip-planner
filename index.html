@@ -230,7 +230,7 @@
   .add-item-btn:hover{border-color:var(--ink-soft);color:var(--ink);}
 
   .footer-block{background:#E4EBF2;border-radius:var(--radius);padding:20px 16px;margin-top:8px;}
-  .reset-btn{display:block;margin:0 auto;background:#fff;border:1px solid var(--line);border-radius:999px;padding:8px 18px;font-family:inherit;font-size:13px;color:var(--ink-soft);cursor:pointer;}
+  .reset-btn{display:block;margin:0 auto;background:#fff;border:1px solid var(--line);border-radius:999px;padding:4px 12px;font-family:inherit;font-size:11px;color:var(--ink-soft);cursor:pointer;}
   .reset-btn:hover{border-color:var(--ink-soft);color:var(--ink);}
   .footer-note{text-align:center;color:var(--ink-soft);font-size:12px;margin-top:12px;}
 
@@ -950,6 +950,11 @@ document.getElementById('startDateInput').addEventListener('change', e=>{
 
 document.getElementById('resetBtn').addEventListener('click', async ()=>{
   if(!confirm('確定要清空所有內容，還原成空白模板嗎？此動作無法復原。')) return;
+  const pwd = prompt('請輸入密碼以確認還原：');
+  if(pwd !== '6711'){
+    if(pwd !== null) alert('密碼錯誤，已取消還原。');
+    return;
+  }
   state = {
     title:'我的旅行行程',
     subtitle:'點這裡填入行程說明，例如目的地、天數、旅伴',
