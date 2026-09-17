@@ -65,6 +65,25 @@
   .rate-item .rdel{border:none;background:transparent;color:var(--ink-soft);cursor:pointer;font-size:12px;padding:0;}
   .rate-item .rdel:hover{color:#9C4F4E;}
 
+  .important-panel{margin-bottom:14px;}
+  .important-panel:empty{display:none;}
+  .important-box{background:#FDECEC;border:1px solid #F0B8B8;border-radius:12px;padding:10px 12px;}
+  .important-box-title{font-size:12px;font-weight:700;color:#9C3B3B;margin-bottom:6px;}
+  .important-item{
+    display:flex;align-items:baseline;gap:8px;padding:5px 0;border-top:1px solid #F5D2D2;
+    cursor:pointer;font-size:12.5px;
+  }
+  .important-item:first-of-type{border-top:none;}
+  .important-item .imp-day{font-weight:700;color:#9C3B3B;white-space:nowrap;}
+  .important-item .imp-time{color:#9C3B3B;opacity:.8;white-space:nowrap;}
+  .important-item .imp-title{color:#7A2E2E;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .important-item:hover .imp-title{text-decoration:underline;}
+  .t-important-btn{
+    flex:0 0 auto;border:none;background:transparent;cursor:pointer;font-size:14px;padding:0 2px;
+    opacity:.35;line-height:1;
+  }
+  .t-important-btn.active{opacity:1;}
+  .t-title.important{color:#C0392B;}
   .start-date-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;font-size:12.5px;color:var(--ink-soft);}
   .start-date-row label{white-space:nowrap;}
   .start-date-row input[type=date]{border:1px solid var(--line);border-radius:8px;padding:4px 8px;font-family:inherit;font-size:12.5px;color:var(--ink);background:var(--bg-card);}
@@ -290,6 +309,8 @@
     </div>
   </div>
 
+  <div class="important-panel" id="importantPanel"></div>
+
   <div class="start-date-row">
     <label for="startDateInput">行程開始日期</label>
     <input type="date" id="startDateInput">
@@ -324,7 +345,7 @@ function blankItem(){
   return { time:'12:00', type:'sight', title:'新項目', desc:'', lat:null, lng:null, mapQuery:'', cost:'', currency:'$',
     bookingRef:'', paymentStatus:'未付款', cancelDeadline:'', tours:[],
     checkInDate:'', nights:'', checkInTime:'', checkOutTime:'', roomType:'', roomSize:'', breakfast:'未定', creditCard:'',
-    deposit:'', balance:'', depositCurrency:'$', balanceCurrency:'$' };
+    deposit:'', balance:'', depositCurrency:'$', balanceCurrency:'$', important:false };
 }
 function blankDay(){
   return { loc:'', date:'', timeline:[ blankItem() ] };
@@ -436,6 +457,37 @@ function renderSummary(){
   document.getElementById('grandTotal').textContent = fmtTwd(stayTwd+foodTwd+transportTwd+otherTwd);
 }
 
+function renderImportantPanel(){
+  const panel = document.getElementById('importantPanel');
+  if(!panel) return;
+  const items = [];
+  state.days.forEach((d, di)=>{
+    d.timeline.forEach(item=>{
+      if(item.important) items.push({ dayIdx: di, time: item.time, title: item.title });
+    });
+  });
+  if(!items.length){ panel.innerHTML = ''; return; }
+  panel.innerHTML = `
+    <div class="important-box">
+      <div class="important-box-title">⚠️ 重要事項（共 ${items.length} 筆）</div>
+      ${items.map(it => `
+        <div class="important-item" data-day="${it.dayIdx}">
+          <span class="imp-day">Day ${it.dayIdx+1}</span>
+          <span class="imp-time">${escapeHtml(it.time)}</span>
+          <span class="imp-title">${escapeHtml(it.title)}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+  panel.querySelectorAll('.important-item').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      activeDay = Number(el.getAttribute('data-day'));
+      renderTabs(); renderPanel();
+      window.scrollTo({top:0, behavior:'smooth'});
+    });
+  });
+}
+
 function renderRates(){
   const list = document.getElementById('ratesList');
   if(!list) return;
@@ -511,7 +563,7 @@ function renderTabs(){
     state.days.push({ loc:last?last.loc:'', date:'', timeline:[ blankItem() ] });
     activeDay = state.days.length-1;
     recomputeDates();
-    renderTabs(); renderPanel(); scheduleSave();
+    renderTabs(); renderPanel(); renderImportantPanel(); scheduleSave();
   });
   tabs.appendChild(addTab);
 
@@ -529,7 +581,7 @@ function renderTabs(){
       state.days.splice(evt.newIndex, 0, moved);
       activeDay = state.days.indexOf(activeId);
       recomputeDates();
-      renderTabs(); renderPanel(); scheduleSave();
+      renderTabs(); renderPanel(); renderImportantPanel(); scheduleSave();
     }
   });
 }
@@ -573,14 +625,14 @@ function renderPanel(){
     [state.days[activeDay-1], state.days[activeDay]] = [state.days[activeDay], state.days[activeDay-1]];
     activeDay -= 1;
     recomputeDates();
-    renderTabs(); renderPanel(); scheduleSave();
+    renderTabs(); renderPanel(); renderImportantPanel(); scheduleSave();
   });
   document.getElementById('moveDayRight').addEventListener('click', ()=>{
     if(activeDay>=state.days.length-1) return;
     [state.days[activeDay+1], state.days[activeDay]] = [state.days[activeDay], state.days[activeDay+1]];
     activeDay += 1;
     recomputeDates();
-    renderTabs(); renderPanel(); scheduleSave();
+    renderTabs(); renderPanel(); renderImportantPanel(); scheduleSave();
   });
   document.getElementById('delDayBtn').addEventListener('click', ()=>{
     if(state.days.length<=1) return;
@@ -588,7 +640,7 @@ function renderPanel(){
     state.days.splice(activeDay,1);
     activeDay = Math.max(0, activeDay-1);
     recomputeDates();
-    renderTabs(); renderPanel(); scheduleSave();
+    renderTabs(); renderPanel(); renderImportantPanel(); scheduleSave();
   });
   document.getElementById('addItemBtn').addEventListener('click', ()=>{
     d.timeline.push(blankItem());
@@ -622,7 +674,8 @@ function renderTimeline(d){
         <span class="t-drag-handle" title="拖曳調整順序">⠿</span>
         <input class="t-time" data-idx="${idx}" data-field="time" value="${escapeHtml(item.time)}">
         <select class="t-tag-select" data-idx="${idx}" data-field="type" style="background:${meta.color}">${typeOptions}</select>
-        <input class="t-title" data-idx="${idx}" data-field="title" value="${escapeHtml(item.title)}">
+        <input class="t-title${item.important?' important':''}" data-idx="${idx}" data-field="title" value="${escapeHtml(item.title)}">
+        <button class="t-important-btn${item.important?' active':''}" data-idx="${idx}" title="標記為重要事項">❗</button>
         <button class="t-del" data-idx="${idx}" title="刪除此項目">✕</button>
       </div>
       <textarea class="t-desc" data-idx="${idx}" data-field="desc" rows="1">${escapeHtml(item.desc)}</textarea>
@@ -745,13 +798,18 @@ function renderTimeline(d){
         }
         if(field==='cost' || field==='currency'){ renderSummary(); }
         if(field==='desc'){ autoGrow(el); }
+        if((field==='title' || field==='time') && item.important){ renderImportantPanel(); }
         scheduleSave();
       });
     });
     const descEl = row.querySelector('.t-desc');
+    row.querySelector('.t-important-btn').addEventListener('click', ()=>{
+      item.important = !item.important;
+      renderTimeline(d); renderImportantPanel(); scheduleSave();
+    });
     row.querySelector('.t-del').addEventListener('click', ()=>{
       d.timeline.splice(idx,1);
-      renderTimeline(d); renderMap(d); renderSummary(); scheduleSave();
+      renderTimeline(d); renderMap(d); renderSummary(); renderImportantPanel(); scheduleSave();
     });
     row.querySelectorAll('.tour-name, .tour-url').forEach(el=>{
       el.addEventListener('input', ()=>{
@@ -881,6 +939,7 @@ function applyIncomingState(parsed){
   renderSummary();
   renderTabs();
   renderPanel();
+  renderImportantPanel();
   applyingRemoteUpdate = false;
 }
 
@@ -894,7 +953,7 @@ async function loadState(){
       document.getElementById('subInput').textContent = state.subtitle;
       document.getElementById('startDateInput').value = state.startDate || '';
       renderRates();
-      renderSummary(); renderTabs(); renderPanel();
+      renderSummary(); renderTabs(); renderPanel(); renderImportantPanel();
     }
   }catch(e){
     console.error('load error', e);
@@ -902,7 +961,7 @@ async function loadState(){
     document.getElementById('subInput').textContent = state.subtitle;
     document.getElementById('startDateInput').value = state.startDate || '';
     renderRates();
-    renderSummary(); renderTabs(); renderPanel();
+    renderSummary(); renderTabs(); renderPanel(); renderImportantPanel();
     showConfigWarningIfNeeded(e);
   }
 
@@ -967,7 +1026,7 @@ document.getElementById('resetBtn').addEventListener('click', async ()=>{
   document.getElementById('subInput').textContent = state.subtitle;
   document.getElementById('startDateInput').value = '';
   renderRates();
-  renderSummary(); renderTabs(); renderPanel();
+  renderSummary(); renderTabs(); renderPanel(); renderImportantPanel();
   await saveState();
 });
 
