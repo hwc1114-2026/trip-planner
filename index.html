@@ -386,6 +386,7 @@ let timelineSortable = null;
 let tabsSortable = null;
 let editingTours = new Set();
 let toursOpenIdx = new Set();
+function dayItemKey(idx){ return activeDay + '_' + idx; }
 
 function rateFor(cur){
   if(!cur) return 1;
@@ -679,7 +680,7 @@ function renderTimeline(d){
         <button class="t-del" data-idx="${idx}" title="刪除此項目">✕</button>
       </div>
       <textarea class="t-desc" data-idx="${idx}" data-field="desc" rows="1">${escapeHtml(item.desc)}</textarea>
-      ${(item.type==='sight' && (toursOpenIdx.has(idx) || (item.tours||[]).length>0)) ? `
+      ${(item.type==='sight' && (toursOpenIdx.has(dayItemKey(idx)) || (item.tours||[]).length>0)) ? `
       <div class="tours-box">
         <div class="tours-box-head">
           <div class="tours-box-title">🚩 相關行程／連結</div>
@@ -688,7 +689,7 @@ function renderTimeline(d){
         ${(item.tours||[]).length ? `
         <div class="tours-list" data-idx="${idx}">
           ${item.tours.map((t,ti)=>{
-            const key = idx+'-'+ti;
+            const key = dayItemKey(idx)+'-'+ti;
             const collapsed = t.url && !editingTours.has(key);
             if(collapsed){
               return `
@@ -823,14 +824,14 @@ function renderTimeline(d){
     row.querySelectorAll('.tour-edit').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         const ti = btn.getAttribute('data-ti');
-        editingTours.add(idx+'-'+ti);
+        editingTours.add(dayItemKey(idx)+'-'+ti);
         renderTimeline(d);
       });
     });
     row.querySelectorAll('.tour-done').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         const ti = btn.getAttribute('data-ti');
-        editingTours.delete(idx+'-'+ti);
+        editingTours.delete(dayItemKey(idx)+'-'+ti);
         renderTimeline(d); scheduleSave();
       });
     });
@@ -838,7 +839,8 @@ function renderTimeline(d){
       btn.addEventListener('click', ()=>{
         const ti = Number(btn.getAttribute('data-ti'));
         item.tours.splice(ti,1);
-        Array.from(editingTours).filter(k=>k.startsWith(idx+'-')).forEach(k=> editingTours.delete(k));
+        const prefix = dayItemKey(idx)+'-';
+        Array.from(editingTours).filter(k=>k.startsWith(prefix)).forEach(k=> editingTours.delete(k));
         renderTimeline(d); scheduleSave();
       });
     });
@@ -847,19 +849,19 @@ function renderTimeline(d){
       tourAddBtn.addEventListener('click', ()=>{
         if(!item.tours) item.tours = [];
         item.tours.push({name:'', url:''});
-        editingTours.add(idx+'-'+(item.tours.length-1));
+        editingTours.add(dayItemKey(idx)+'-'+(item.tours.length-1));
         renderTimeline(d); scheduleSave();
       });
     }
     const tourInlineBtn = row.querySelector('.tour-inline-btn');
     if(tourInlineBtn){
       tourInlineBtn.addEventListener('click', ()=>{
-        const alreadyOpen = toursOpenIdx.has(idx) || (item.tours||[]).length>0;
-        toursOpenIdx.add(idx);
+        const alreadyOpen = toursOpenIdx.has(dayItemKey(idx)) || (item.tours||[]).length>0;
+        toursOpenIdx.add(dayItemKey(idx));
         if(!item.tours) item.tours = [];
         if(!alreadyOpen || item.tours.length===0){
           item.tours.push({name:'', url:''});
-          editingTours.add(idx+'-'+(item.tours.length-1));
+          editingTours.add(dayItemKey(idx)+'-'+(item.tours.length-1));
         }
         renderTimeline(d); scheduleSave();
       });
