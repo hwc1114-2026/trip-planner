@@ -134,11 +134,13 @@
   .timeline{position:relative;padding-left:20px;margin-top:6px;}
   .timeline::before{content:"";position:absolute;left:5px;top:8px;bottom:8px;width:1px;background:var(--line);}
   .t-item{position:relative;padding:10px 0;}
-  .t-item::before{
-    content:"";position:absolute;left:-20px;top:14px;width:10px;height:10px;border-radius:50%;
-    background:var(--bg-card);border:2px solid var(--dot-color,var(--c-sight));
+  .t-dot-toggle{
+    position:absolute;left:-21px;top:13px;width:12px;height:12px;border-radius:50%;
+    background:var(--bg-card);border:2px solid var(--dot-color,var(--c-sight));padding:0;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    font-size:6px;line-height:1;color:var(--dot-color,var(--c-sight));
   }
-  .t-top{display:flex;align-items:baseline;gap:10px;margin-bottom:6px;flex-wrap:wrap;}
+  .t-top{display:flex;align-items:baseline;gap:7px;margin-bottom:6px;flex-wrap:wrap;}
   .t-drag-handle{
     cursor:grab;color:var(--ink-soft);font-size:16px;line-height:1;user-select:none;
     touch-action:none;padding:2px 2px;flex:0 0 auto;
@@ -146,6 +148,9 @@
   .t-drag-handle:active{cursor:grabbing;}
   .t-item.t-item-ghost{opacity:.35;background:var(--bg);border-radius:10px;}
   .t-item.sortable-chosen{background:var(--bg);border-radius:10px;}
+  .t-detail{margin-top:2px;}
+  .tour-drag-handle{cursor:grab;color:var(--ink-soft);font-size:13px;flex:0 0 auto;touch-action:none;}
+  .tour-drag-handle:active{cursor:grabbing;}
   .t-time{border:none;background:transparent;padding:0;font-size:12.5px;font-weight:700;color:var(--ink-soft);width:44px;font-family:'Noto Serif TC',serif;}
   .t-tag-select{font-size:9.5px;font-weight:700;color:#fff;border:none;border-radius:999px;padding:1px 7px;font-family:inherit;cursor:pointer;}
   .t-title{
@@ -386,6 +391,7 @@ let timelineSortable = null;
 let tabsSortable = null;
 let editingTours = new Set();
 let toursOpenIdx = new Set();
+let expandedItems = new Set();
 function dayItemKey(idx){ return activeDay + '_' + idx; }
 
 function rateFor(cur){
@@ -601,6 +607,8 @@ function renderPanel(){
         </div>
       </div>
       <div class="day-actions">
+        <button class="move-day-btn" id="expandAllBtn" title="展開全部細項">⊞</button>
+        <button class="move-day-btn" id="collapseAllBtn" title="收合全部細項">⊟</button>
         <button class="move-day-btn" id="moveDayLeft" title="往前移一天" ${activeDay<=0?'disabled':''}>◀</button>
         <button class="move-day-btn" id="moveDayRight" title="往後移一天" ${activeDay>=state.days.length-1?'disabled':''}>▶</button>
         <button class="del-day-btn" id="delDayBtn" ${state.days.length<=1?'disabled':''}>🗑 刪除此日</button>
@@ -611,6 +619,15 @@ function renderPanel(){
     <div class="timeline" id="timeline"></div>
     <button class="add-item-btn" id="addItemBtn">＋ 新增行程項目</button>
   `;
+
+  document.getElementById('expandAllBtn').addEventListener('click', ()=>{
+    d.timeline.forEach((_,i)=> expandedItems.add(dayItemKey(i)));
+    renderTimeline(d);
+  });
+  document.getElementById('collapseAllBtn').addEventListener('click', ()=>{
+    d.timeline.forEach((_,i)=> expandedItems.delete(dayItemKey(i)));
+    renderTimeline(d);
+  });
 
   const locInputEl = document.getElementById('locInput');
   autoWidth(locInputEl);
@@ -670,7 +687,9 @@ function renderTimeline(d){
       transitUrl = `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${dest}&travel_mode=transit`;
     }
     const payOptions = PAYMENT_OPTIONS.map(p=>`<option value="${p}" ${p===item.paymentStatus?'selected':''}>${p}</option>`).join('');
+    const expanded = expandedItems.has(dayItemKey(idx));
     row.innerHTML = `
+      <button class="t-dot-toggle" data-idx="${idx}" title="展開／收合細項">${expanded?'▾':'▸'}</button>
       <div class="t-top">
         <span class="t-drag-handle" title="拖曳調整順序">⠿</span>
         <input class="t-time" data-idx="${idx}" data-field="time" value="${escapeHtml(item.time)}">
@@ -679,6 +698,7 @@ function renderTimeline(d){
         <button class="t-important-btn${item.important?' active':''}" data-idx="${idx}" title="標記為重要事項">❗</button>
         <button class="t-del" data-idx="${idx}" title="刪除此項目">✕</button>
       </div>
+      <div class="t-detail" style="${expanded?'':'display:none;'}">
       <textarea class="t-desc" data-idx="${idx}" data-field="desc" rows="1">${escapeHtml(item.desc)}</textarea>
       ${(item.type==='sight' && (toursOpenIdx.has(dayItemKey(idx)) || (item.tours||[]).length>0)) ? `
       <div class="tours-box">
@@ -694,6 +714,7 @@ function renderTimeline(d){
             if(collapsed){
               return `
               <div class="tour-row tour-row-collapsed">
+                <span class="tour-drag-handle" title="拖曳調整順序">⠿</span>
                 <a class="tour-chip" href="${escapeHtml(t.url)}" target="_blank" rel="noopener">🔗 ${escapeHtml(t.name||'連結')}</a>
                 <button class="tour-edit" data-idx="${idx}" data-ti="${ti}" title="編輯">✎</button>
                 <button class="tour-del" data-idx="${idx}" data-ti="${ti}" title="刪除此連結">✕</button>
@@ -701,6 +722,7 @@ function renderTimeline(d){
             }
             return `
             <div class="tour-row tour-row-editing">
+              <span class="tour-drag-handle" title="拖曳調整順序">⠿</span>
               <input type="text" class="tour-name" data-idx="${idx}" data-ti="${ti}" placeholder="行程名稱／時長／價格" value="${escapeHtml(t.name||'')}">
               <input type="text" class="tour-url" data-idx="${idx}" data-ti="${ti}" placeholder="連結網址" value="${escapeHtml(t.url||'')}">
               <button class="tour-done" data-idx="${idx}" data-ti="${ti}" title="完成">✓</button>
@@ -786,6 +808,7 @@ function renderTimeline(d){
       <div class="t-links">
         <a class="t-nav transit" href="${transitUrl}" target="_blank" rel="noopener">🚃 查看實際交通路線</a>
       </div>` : ''}
+      </div>
     `;
     row.querySelectorAll('[data-field]').forEach(el=>{
       el.addEventListener('input', ()=>{
@@ -804,6 +827,11 @@ function renderTimeline(d){
       });
     });
     const descEl = row.querySelector('.t-desc');
+    row.querySelector('.t-dot-toggle').addEventListener('click', ()=>{
+      const key = dayItemKey(idx);
+      if(expandedItems.has(key)) expandedItems.delete(key); else expandedItems.add(key);
+      renderTimeline(d);
+    });
     row.querySelector('.t-important-btn').addEventListener('click', ()=>{
       item.important = !item.important;
       renderTimeline(d); renderImportantPanel(); scheduleSave();
@@ -866,8 +894,27 @@ function renderTimeline(d){
         renderTimeline(d); scheduleSave();
       });
     }
+    const toursListEl = row.querySelector('.tours-list');
+    if(toursListEl){
+      new Sortable(toursListEl, {
+        handle: '.tour-drag-handle',
+        animation: 150,
+        ghostClass: 't-item-ghost',
+        onEnd: (evt)=>{
+          if(evt.oldIndex === evt.newIndex) return;
+          const [moved] = item.tours.splice(evt.oldIndex, 1);
+          item.tours.splice(evt.newIndex, 0, moved);
+          // 重新對應編輯中狀態的索引
+          const prefix = dayItemKey(idx)+'-';
+          const wasEditingOld = editingTours.has(prefix+evt.oldIndex);
+          Array.from(editingTours).filter(k=>k.startsWith(prefix)).forEach(k=> editingTours.delete(k));
+          if(wasEditingOld) editingTours.add(prefix+evt.newIndex);
+          renderTimeline(d); scheduleSave();
+        }
+      });
+    }
     wrap.appendChild(row);
-    if(descEl) autoGrow(descEl);
+    if(descEl && expanded) autoGrow(descEl);
   });
 
   if(timelineSortable){ timelineSortable.destroy(); timelineSortable = null; }
