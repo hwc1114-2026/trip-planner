@@ -121,6 +121,7 @@
   }
   .move-day-btn:hover:not(:disabled){border-color:var(--ink-soft);color:var(--ink);}
   .move-day-btn:disabled{opacity:.3;cursor:not-allowed;}
+  .move-day-btn.icon-btn{display:inline-flex;align-items:center;justify-content:center;}
   .del-day-btn{border:1px solid var(--line);background:transparent;border-radius:999px;padding:5px 12px;font-size:12px;color:var(--ink-soft);cursor:pointer;font-family:inherit;}
   .del-day-btn:hover{border-color:#9C4F4E;color:#9C4F4E;}
   .route-note{font-size:10.5px;color:var(--ink-soft);opacity:.75;margin:10px 0 12px;}
@@ -131,16 +132,20 @@
     background:var(--bg);display:flex;align-items:center;justify-content:center;
   }
 
-  .timeline{position:relative;padding-left:20px;margin-top:6px;}
-  .timeline::before{content:"";position:absolute;left:5px;top:8px;bottom:8px;width:1px;background:var(--line);}
+  .timeline{position:relative;padding-left:8px;margin-top:6px;}
   .t-item{position:relative;padding:10px 0;}
-  .t-dot-toggle{
-    position:absolute;left:-21px;top:13px;width:12px;height:12px;border-radius:50%;
-    background:var(--bg-card);border:2px solid var(--dot-color,var(--c-sight));padding:0;
-    cursor:pointer;display:flex;align-items:center;justify-content:center;
-    font-size:6px;line-height:1;color:var(--dot-color,var(--c-sight));
+  .t-type-group{
+    display:flex;align-items:center;border-radius:999px;overflow:hidden;flex:0 0 auto;
+    padding:2px;gap:4px;
   }
-  .t-top{display:flex;align-items:baseline;gap:7px;margin-bottom:6px;flex-wrap:wrap;}
+  .t-dot-toggle{
+    border:1px solid rgba(255,255,255,.65);background:transparent;padding:0;cursor:pointer;
+    width:14px;height:14px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;flex:0 0 auto;
+  }
+  .t-chevron{transition:transform .15s ease;transform:rotate(-90deg);}
+  .t-chevron.expanded{transform:rotate(0deg);}
+  .t-top{display:flex;align-items:center;gap:7px;margin-bottom:6px;flex-wrap:wrap;}
   .t-drag-handle{
     cursor:grab;color:var(--ink-soft);font-size:16px;line-height:1;user-select:none;
     touch-action:none;padding:2px 2px;flex:0 0 auto;
@@ -151,11 +156,21 @@
   .t-detail{margin-top:2px;}
   .tour-drag-handle{cursor:grab;color:var(--ink-soft);font-size:13px;flex:0 0 auto;touch-action:none;}
   .tour-drag-handle:active{cursor:grabbing;}
-  .t-time{border:none;background:transparent;padding:0;font-size:12.5px;font-weight:700;color:var(--ink-soft);width:44px;font-family:'Noto Serif TC',serif;}
-  .t-tag-select{font-size:9.5px;font-weight:700;color:#fff;border:none;border-radius:999px;padding:1px 7px;font-family:inherit;cursor:pointer;}
+  .t-time-title{display:flex;align-items:baseline;gap:3px;flex:1;min-width:100px;}
+  .t-time{border:none;background:transparent;padding:0;font-size:12px;font-weight:700;color:var(--ink-soft);width:34px;font-family:'Noto Serif TC',serif;flex:0 0 auto;}
+  .t-tag-select{
+    font-size:12px;font-weight:700;color:#fff;border:none;background:transparent;
+    padding:0 16px 0 2px;font-family:inherit;cursor:pointer;
+    -webkit-appearance:none;appearance:none;box-sizing:border-box;
+    height:20px;line-height:20px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23ffffff' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;
+    background-position:right 4px center;
+    background-size:9px 6px;
+  }
   .t-title{
     border:none;border-bottom:1px solid var(--line);background:transparent;font-family:'Noto Serif TC',serif;
-    font-weight:700;font-size:16px;color:var(--ink);flex:1;min-width:100px;padding:1px 2px 4px;
+    font-weight:700;font-size:15px;color:var(--ink);flex:1;min-width:100px;padding:1px 2px 4px;
   }
   .t-title:focus{outline:none;border-bottom-color:var(--ink);background:var(--bg);}
   .t-del{border:none;background:transparent;color:var(--ink-soft);cursor:pointer;font-size:14px;padding:0 4px;}
@@ -607,8 +622,8 @@ function renderPanel(){
         </div>
       </div>
       <div class="day-actions">
-        <button class="move-day-btn" id="expandAllBtn" title="展開全部細項">⊞</button>
-        <button class="move-day-btn" id="collapseAllBtn" title="收合全部細項">⊟</button>
+        <button class="move-day-btn icon-btn" id="expandAllBtn" title="展開全部細項"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 3 21 3 21 9"></polyline><polyline points="9 21 3 21 3 15"></polyline><line x1="21" y1="3" x2="14" y2="10"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg></button>
+        <button class="move-day-btn icon-btn" id="collapseAllBtn" title="收合全部細項"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 10 14 10 20"></polyline><polyline points="20 10 14 10 14 4"></polyline><line x1="14" y1="10" x2="21" y2="3"></line><line x1="3" y1="21" x2="10" y2="14"></line></svg></button>
         <button class="move-day-btn" id="moveDayLeft" title="往前移一天" ${activeDay<=0?'disabled':''}>◀</button>
         <button class="move-day-btn" id="moveDayRight" title="往後移一天" ${activeDay>=state.days.length-1?'disabled':''}>▶</button>
         <button class="del-day-btn" id="delDayBtn" ${state.days.length<=1?'disabled':''}>🗑 刪除此日</button>
@@ -689,12 +704,18 @@ function renderTimeline(d){
     const payOptions = PAYMENT_OPTIONS.map(p=>`<option value="${p}" ${p===item.paymentStatus?'selected':''}>${p}</option>`).join('');
     const expanded = expandedItems.has(dayItemKey(idx));
     row.innerHTML = `
-      <button class="t-dot-toggle" data-idx="${idx}" title="展開／收合細項">${expanded?'▾':'▸'}</button>
       <div class="t-top">
         <span class="t-drag-handle" title="拖曳調整順序">⠿</span>
-        <input class="t-time" data-idx="${idx}" data-field="time" value="${escapeHtml(item.time)}">
-        <select class="t-tag-select" data-idx="${idx}" data-field="type" style="background:${meta.color}">${typeOptions}</select>
-        <input class="t-title${item.important?' important':''}" data-idx="${idx}" data-field="title" value="${escapeHtml(item.title)}">
+        <div class="t-type-group" style="background:${meta.color}">
+          <button class="t-dot-toggle" data-idx="${idx}" title="展開／收合細項">
+            <svg class="t-chevron${expanded?' expanded':''}" viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </button>
+          <select class="t-tag-select" data-idx="${idx}" data-field="type">${typeOptions}</select>
+        </div>
+        <div class="t-time-title">
+          <input class="t-time" data-idx="${idx}" data-field="time" value="${escapeHtml(item.time)}">
+          <input class="t-title${item.important?' important':''}" data-idx="${idx}" data-field="title" value="${escapeHtml(item.title)}">
+        </div>
         <button class="t-important-btn${item.important?' active':''}" data-idx="${idx}" title="標記為重要事項">❗</button>
         <button class="t-del" data-idx="${idx}" title="刪除此項目">✕</button>
       </div>
